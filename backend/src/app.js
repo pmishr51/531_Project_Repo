@@ -1,16 +1,14 @@
-const express = require('express');
-const cors = require('cors');
-require('dotenv').config();
-const routes = require('./routes');
+const express = require("express");
+const artRoutes = require("./routes/artRoutes");
+const artistRoutes = require("./routes/artistRoutes");
+require("dotenv").config();
 
 const app = express();
-app.use(cors());
+const PORT = process.env.PORT || 5000;
+
 app.use(express.json());
 
-// Use routes
-app.use('/api', routes);
+app.use("/api/art", artRoutes);
+app.use("/api/artist", artistRoutes);
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

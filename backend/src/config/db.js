@@ -1,11 +1,28 @@
-const neo4j = require('neo4j-driver');
-require('dotenv').config();
+const axios = require("axios");
 
-const driver = neo4j.driver(
-  process.env.GRAPHDB_URI || 'bolt://localhost:7687',
-  neo4j.auth.basic(process.env.GRAPHDB_USER || 'neo4j', process.env.GRAPHDB_PASSWORD || 'password')
-);
+const endpointUrl =
+  process.env.GRAPHDB_URI || "http://localhost:7200/repositories/project";
 
-const session = driver.session();
+const graphdbClient = {
+  query: async (sparqlQuery) => {
+    console.log("SPARQL Query:", sparqlQuery);
+    console.log("Endpoint URL:", endpointUrl);
+    try {
+      const response = await axios.post(endpointUrl, sparqlQuery, {
+        headers: {
+          "Content-Type": "application/sparql-query",
+          Accept: "application/sparql-results+json",
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error(
+        "SPARQL Query Error:",
+        error.response?.data || error.message
+      );
+      throw error;
+    }
+  },
+};
 
-module.exports = { driver, session };
+module.exports = graphdbClient;

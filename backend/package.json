@@ -11,10 +11,13 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "axios": "^1.7.8",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
+    "dotenv": "^16.4.7",
     "express": "^4.21.1",
-    "neo4j-driver": "^5.26.0"
+    "joi": "^17.13.3",
+    "neo4j-driver": "^5.26.0",
+    "sparql-http-client": "^3.0.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.7"
