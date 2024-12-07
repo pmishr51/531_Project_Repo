@@ -8,9 +8,12 @@ exports.getAllMediums = async () => {
 
     SELECT DISTINCT ?mediumName
     WHERE {
+        ?artwork rdf:type art:Artwork ;
+                 art:hasMedium ?medium .
         ?medium rdf:type art:Medium ;
                 art:mediumName ?mediumName .
     }
+    ORDER BY ?mediumName
     OFFSET 290
     LIMIT 100
     `;
@@ -19,7 +22,7 @@ exports.getAllMediums = async () => {
 
     return response.results.bindings.map((binding) => binding.mediumName.value);
   } catch (error) {
-    console.error("Error fetching mediums:", error.message);
+    console.error("Error fetching mediums with artworks:", error.message);
     throw error;
   }
 };
@@ -32,6 +35,8 @@ exports.getAllCountries = async () => {
 
     SELECT DISTINCT ?countryName
     WHERE {
+        ?artwork rdf:type art:Artwork ;
+                 art:createdAt ?country .
         ?country rdf:type art:Country ;
                  art:artworkCountry ?countryName .
     }
@@ -46,31 +51,62 @@ exports.getAllCountries = async () => {
       (binding) => binding.countryName.value
     );
   } catch (error) {
-    console.error("Error fetching countries:", error.message);
+    console.error("Error fetching countries with artworks:", error.message);
     throw error;
   }
 };
 
 exports.getAllArtists = async () => {
   try {
-    const query = `
+    const queryArtistsWithArtworks = `
+    PREFIX art: <http://www.semanticweb.org/prana/ontologies/2024/10/ArtMuseum#>
+    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+    SELECT DISTINCT ?artist
+    WHERE {
+        ?artwork rdf:type art:Artwork ;
+                 art:createdBy ?artist .
+    }
+    LIMIT 200
+    `;
+
+    const artistWithArtworkResponse = await graphdbClient.query(
+      queryArtistsWithArtworks
+    );
+    const artistURIs = artistWithArtworkResponse.results.bindings.map(
+      (binding) => binding.artist.value
+    );
+
+    if (artistURIs.length === 0) {
+      return [];
+    }
+
+    const artistIDs = artistURIs.map((uri) => {
+      const idWithDecimal = uri.split("#")[1];
+      const id = idWithDecimal.split(".")[0];
+      return `art:${id}`;
+    });
+
+    const artistFilter = artistIDs.join(" ");
+    const queryArtistNames = `
     PREFIX art: <http://www.semanticweb.org/prana/ontologies/2024/10/ArtMuseum#>
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 
     SELECT DISTINCT ?artistName
     WHERE {
+        VALUES ?artist { ${artistFilter} }
         ?artist rdf:type art:Artist ;
                 art:artistName ?artistName .
     }
-    ORDER BY ?artistName
-    LIMIT 200
     `;
 
-    const response = await graphdbClient.query(query);
+    const artistNameResponse = await graphdbClient.query(queryArtistNames);
 
-    return response.results.bindings.map((binding) => binding.artistName.value);
+    return artistNameResponse.results.bindings.map(
+      (binding) => binding.artistName.value
+    );
   } catch (error) {
-    console.error("Error fetching artists:", error.message);
+    console.error("Error fetching artists with artworks:", error.message);
     throw error;
   }
 };
@@ -83,11 +119,14 @@ exports.getAllDepartments = async () => {
 
     SELECT DISTINCT ?departmentName
     WHERE {
+        ?artwork rdf:type art:Artwork ;
+                 art:hasDepartment ?department .
         ?department rdf:type art:Department ;
                     art:departmentName ?departmentName .
     }
     ORDER BY ?departmentName
     LIMIT 100
+    OFFSET 5
     `;
 
     const response = await graphdbClient.query(query);
@@ -96,7 +135,7 @@ exports.getAllDepartments = async () => {
       (binding) => binding.departmentName.value
     );
   } catch (error) {
-    console.error("Error fetching departments:", error.message);
+    console.error("Error fetching departments with artworks:", error.message);
     throw error;
   }
 };

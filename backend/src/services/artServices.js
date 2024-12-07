@@ -3,12 +3,12 @@ const graphdbClient = require("../config/db");
 exports.getAllArtByArtist = async (filters) => {
   const { artistName } = filters;
 
-  const queryInteger = `
+  const queryArtist = `
   PREFIX art: <http://www.semanticweb.org/prana/ontologies/2024/10/ArtMuseum#>
   PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
   PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
-  SELECT ?artist
+  SELECT DISTINCT ?artist
   WHERE {
       ?artist rdf:type art:Artist ;
               art:artistName "${artistName}" .
@@ -17,7 +17,7 @@ exports.getAllArtByArtist = async (filters) => {
   `;
 
   try {
-    const artistResponse = await graphdbClient.query(queryInteger);
+    const artistResponse = await graphdbClient.query(queryArtist);
     if (!artistResponse.results.bindings.length) {
       throw new Error("Artist not found.");
     }
@@ -26,40 +26,50 @@ exports.getAllArtByArtist = async (filters) => {
     const prefix = "art:";
     const artistId = artistUri.split("#")[1];
     const formattedArtist = `${prefix}${parseFloat(artistId).toFixed(1)}`;
-    console.log(formattedArtist);
 
-    const queryFloat = `
+    const queryArtworks = `
     PREFIX art: <http://www.semanticweb.org/prana/ontologies/2024/10/ArtMuseum#>
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
     PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
-    SELECT ?artwork ?title ?departmentName ?mediumName ?acquiredThrough ?countryName
+    SELECT DISTINCT ?artwork ?title
+           (GROUP_CONCAT(DISTINCT ?departmentName; SEPARATOR=", ") AS ?departments)
+           (GROUP_CONCAT(DISTINCT ?mediumName; SEPARATOR=", ") AS ?mediums)
+           (GROUP_CONCAT(DISTINCT ?acquiredThrough; SEPARATOR=", ") AS ?acquisitions)
+           (GROUP_CONCAT(DISTINCT ?countryName; SEPARATOR=", ") AS ?countries)
+           (GROUP_CONCAT(DISTINCT ?museumName; SEPARATOR=", ") AS ?museums)
     WHERE {
         ?artwork rdf:type art:Artwork ;
                  art:artifactTitle ?title ;
-                 art:hasDepartment ?department;
-                 art:hasMedium ?medium;
-                 art:acquiredThrough ?acquired;
-                 art:createdAt ?country;
+                 art:hasDepartment ?department ;
+                 art:hasMedium ?medium ;
+                 art:acquiredThrough ?acquired ;
+                 art:createdAt ?country ;
                  art:createdBy ${formattedArtist} .
-                 ?department art:departmentName ?departmentName.
-    				     ?medium art:mediumName ?mediumName.
-                 ?acquired art:acquisitionDetails ?acquiredThrough.
-                 ?country art:artworkCountry ?countryName.
+
+        ?department art:departmentName ?departmentName .
+        ?medium art:mediumName ?mediumName .
+        ?acquired art:acquisitionDetails ?acquiredThrough .
+        ?country art:artworkCountry ?countryName .
+
+        ?museum art:hasArtwork ?artwork ;
+                art:museumName ?museumName .
     }
+    GROUP BY ?artwork ?title
     ORDER BY ?title
     LIMIT 100
     `;
 
-    const artworkResponse = await graphdbClient.query(queryFloat);
+    const artworkResponse = await graphdbClient.query(queryArtworks);
 
     const results = artworkResponse.results.bindings.map((binding) => ({
       artwork: binding.artwork.value,
       title: binding.title.value,
-      department: binding.departmentName.value,
-      medium: binding.mediumName.value,
-      acquiredThrough: binding.acquiredThrough.value,
-      country: binding.countryName.value,
+      department: binding.departments.value,
+      medium: binding.mediums.value,
+      acquiredThrough: binding.acquisitions.value,
+      country: binding.countries.value,
+      museums: binding.museums.value,
       artist: artistName,
     }));
 
@@ -79,7 +89,7 @@ exports.getAllArtByDepartment = async (filters) => {
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
     PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
-    SELECT ?artwork ?title ?mediumName ?artist
+    SELECT DISTINCT ?artwork ?title ?mediumName ?artist
     WHERE {
         ?department art:departmentName "${departmentName}" .
         ?artwork rdf:type art:Artwork ;
@@ -106,7 +116,7 @@ exports.getAllArtByDepartment = async (filters) => {
         PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
         PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
-        SELECT ?artistName
+        SELECT DISTINCT ?artistName
         WHERE {
             art:${artistId} art:artistName ?artistName .
         }
@@ -146,7 +156,7 @@ exports.getAllArtByMedium = async (filters) => {
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
     PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
-    SELECT ?artwork ?title ?artist ?departmentName
+    SELECT DISTINCT ?artwork ?title ?artist ?departmentName
     WHERE {
         ?medium art:mediumName "${mediumName}" .
         ?artwork rdf:type art:Artwork ;
@@ -173,7 +183,7 @@ exports.getAllArtByMedium = async (filters) => {
         PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
         PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
-        SELECT ?artistName
+        SELECT DISTINCT ?artistName
         WHERE {
             art:${artistId} art:artistName ?artistName .
         }
@@ -213,7 +223,7 @@ exports.getAllArtByCountry = async (filters) => {
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
     PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
-    SELECT ?artwork ?title ?artist ?mediumName ?departmentName
+    SELECT DISTINCT ?artwork ?title ?artist ?mediumName ?departmentName
     WHERE {
         ?country art:artworkCountry "${countryName}" .
         ?artwork rdf:type art:Artwork ;
@@ -242,7 +252,7 @@ exports.getAllArtByCountry = async (filters) => {
         PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
         PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
-        SELECT ?artistName
+        SELECT DISTINCT ?artistName
         WHERE {
             art:${artistId} art:artistName ?artistName .
         }
