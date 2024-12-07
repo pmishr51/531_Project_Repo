@@ -1,7 +1,7 @@
 const axios = require("axios");
 
 const endpointUrl =
-  process.env.GRAPHDB_URI || "http://localhost:7200/repositories/project";
+  process.env.GRAPHDB_URI || "http://localhost:7200/repositories/531_Project_1";
 
 const graphdbClient = {
   query: async (sparqlQuery) => {

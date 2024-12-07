@@ -1,33 +1,17 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import axios from "axios";
 import "./App.css";
 
 function App() {
-  const [searchCriteria, setSearchCriteria] = useState("");
+  const [filterType, setFilterType] = useState("Title"); // Default to "Title"
   const [searchText, setSearchText] = useState("");
-  const [criteriaOptions, setCriteriaOptions] = useState([]);
   const [filteredList, setFilteredList] = useState([]);
 
-  // Fetch dropdown options from the backend API
-  useEffect(() => {
-    const fetchCriteriaOptions = async () => {
-      try {
-        const response = await axios.get("/api/criteria-options"); // Replace with your backend endpoint
-        setCriteriaOptions(response.data);
-        setSearchCriteria(response.data[0]); // Set default criteria
-      } catch (error) {
-        console.error("Error fetching criteria options:", error);
-      }
-    };
-
-    fetchCriteriaOptions();
-  }, []);
-
-  // Handle search and fetch filtered results from the backend API
+  // Handle search and fetch filtered results
   const handleSearch = async () => {
     try {
       const response = await axios.get("/api/search", {
-        params: { criteria: searchCriteria, text: searchText },
+        params: { filterType, text: searchText },
       });
       setFilteredList(response.data);
     } catch (error) {
@@ -37,21 +21,20 @@ function App() {
 
   return (
     <div className="app-container">
+      <h1>Search for Artwork Data</h1>
       <div className="search-container">
+        {/* Static dropdown with predefined options */}
         <select
-          value={searchCriteria}
-          onChange={(e) => setSearchCriteria(e.target.value)}
+          value={filterType}
+          onChange={(e) => setFilterType(e.target.value)}
           className="dropdown"
         >
-          {criteriaOptions.map((option, index) => (
-            <option key={index} value={option}>
-              {option}
-            </option>
-          ))}
+          <option value="Title">Title</option>
+          <option value="Nationality">Nationality</option>
         </select>
         <input
           type="text"
-          placeholder="Enter Search Text"
+          placeholder={`Search by ${filterType}`} // Dynamic placeholder
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
           className="search-input"
