@@ -34,10 +34,11 @@ Access Points:
 -GraphDB: The GraphDB workbench will be accessible at http://localhost:7200. Use this to manage repositories, run SPARQL queries, and verify data.
 Summary
 These instructions will set up the frontend, backend, and GraphDB repository for this project. Make sure each component runs in its respective terminal or window and test the connections between them (e.g., 
+frontend fetching data from the backend, and backend querying the GraphDB repository).
+
+
 
 
 Youtube Link :
 https://youtu.be/0EJbRFHrsvY
 
-
-frontend fetching data from the backend, and backend querying the GraphDB repository).
