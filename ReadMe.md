@@ -1,4 +1,4 @@
-Setup Instructions
+Setup Instructions:-
 
 Front End (React):
 1.Open a new terminal window.
